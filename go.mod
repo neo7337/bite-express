@@ -5,6 +5,7 @@ go 1.27.2
 require go.mongodb.org/mongo-driver/v2 v2.10.0
 
 require (
+	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/klauspost/compress v1.20.3 // indirect
 	github.com/xdg-go/scram v1.4.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
@@ -12,4 +13,6 @@ require (
 	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
+	oss.nandlabs.io/golly v1.8.0 // indirect
 )
