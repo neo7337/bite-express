@@ -51,7 +51,7 @@ func OpenConnections() (err error) {
 				logger.ErrorF("Failed to open a connection", "error", err)
 				return err
 			}
-			RegisterMongoRepos(conn, provider.Modules)
+			return RegisterMongoRepos(conn, provider.Modules)
 		}
 	}
 	return
@@ -69,14 +69,18 @@ func OpenMongoDbConnection(connection config.Connection) (db *mongodb_repo.Mongo
 	return
 }
 
-func RegisterMongoRepos(conn *mongodb_repo.MongoDBRepo, modules []string) {
+func RegisterMongoRepos(conn *mongodb_repo.MongoDBRepo, modules []string) error {
 	for _, module := range modules {
 		switch module {
 		case "restaurants":
-			repo := mongodb_repo.NewMongoDBRestaurantsRepo(conn)
+			repo, err := mongodb_repo.NewMongoDBRestaurantsRepo(conn)
+			if err != nil {
+				return err
+			}
 			repository.Manager.Register(repository.RestaurantsRepo, repo)
 		}
 	}
+	return nil
 }
 
 func CloseConnections() (err error) {

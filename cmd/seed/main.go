@@ -43,9 +43,6 @@ func main() {
 	defer func() { _ = client.Disconnect(context.Background()) }()
 
 	coll := client.Database(*dbName).Collection("restaurants")
-	if err := createIndexes(ctx, coll); err != nil {
-		log.Fatalf("error creating indexes: %v", err)
-	}
 
 	now := time.Now().UTC()
 	seen := map[int64]bool{}
@@ -125,19 +122,6 @@ func env(key, fallback string) string {
 		return v
 	}
 	return fallback
-}
-
-func createIndexes(ctx context.Context, coll *mongo.Collection) error {
-	_, err := coll.Indexes().CreateMany(ctx, []mongo.IndexModel{
-		{Keys: bson.D{{"location", "2dsphere"}}},
-		{
-			Keys:    bson.D{{"tenantId", 1}, {"sourceId", 1}},
-			Options: options.Index().SetUnique(true).SetPartialFilterExpression(bson.M{"sourceId": bson.M{"$exists": true}}),
-		},
-		{Keys: bson.D{{"tenandId", 1}, {"address.city", 1}, {"rating.average", -1}}},
-		{Keys: bson.D{{"tenandId", 1}, {"cuisineKeys", 1}, {"rating.average", -1}}},
-	})
-	return err
 }
 
 func connect(uri string) (*mongo.Client, error) {
