@@ -85,3 +85,34 @@ func TestToDetailDTO_Sparse(t *testing.T) {
 		}
 	}
 }
+
+func TestToRestaurant_FromRequest(t *testing.T) {
+	lat, lng := 28.45, 77.02
+	req := CreateRestaurantRequest{
+		Name: "  Spice ", Address: " 12 Main ", City: " Gurgaon ", Country: "India", CountryCode: 1,
+		Lat: &lat, Lng: &lng, Cuisines: []string{"North Indian", "north indian", "Cafe"},
+		Flags: FlagsDTO{HasOnlineDelivery: true},
+	}
+	r := req.toRestaurant()
+	if r.Name != "Spice" || r.Address.Line != "12 Main" || r.Address.City != "Gurgaon" || r.Address.CountryCode != 1 {
+		t.Errorf("trimming/mapping: %+v", r)
+	}
+	if len(r.Cuisines) != 2 || len(r.CuisineKeys) != 2 || r.CuisineKeys[0] != "north indian" {
+		t.Errorf("cuisines: %v %v", r.Cuisines, r.CuisineKeys)
+	}
+	if r.Location == nil || r.Location.Type != "Point" || r.Location.Coordinates[0] != lng || r.Location.Coordinates[1] != lat {
+		t.Errorf("location must be GeoJSON [lng, lat]: %+v", r.Location)
+	}
+	if r.Pricing.Currency != "INR" || !r.Flags.HasOnlineDelivery || r.Attributes == nil || r.Source.Dataset != "api" {
+		t.Errorf("defaults: %+v", r)
+	}
+	if r.TenantID != "" || r.SourceID != 0 || !r.ID.IsZero() {
+		t.Errorf("client-controlled identity fields must stay empty: %+v", r)
+	}
+}
+
+func TestToRestaurant_NoLocationWithoutCoordinates(t *testing.T) {
+	if (CreateRestaurantRequest{Name: "x"}).toRestaurant().Location != nil {
+		t.Error("no lat/lng should mean no location")
+	}
+}

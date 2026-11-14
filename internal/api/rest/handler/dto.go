@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"strings"
+
 	"github.com/neo7337/bite-express/internal/repository"
 	"github.com/neo7337/bite-express/pkg"
 )
@@ -109,4 +111,50 @@ func toDetailDTO(r *pkg.Restaurant) RestaurantDetailDTO {
 		d.Location = &LocationDTO{Lng: r.Location.Coordinates[0], Lat: r.Location.Coordinates[1]}
 	}
 	return d
+}
+
+type CreateRestaurantRequest struct {
+	Name        string   `json:"name"`
+	Address     string   `json:"address"`
+	Locality    string   `json:"locality"`
+	City        string   `json:"city"`
+	CountryCode int      `json:"countryCode"`
+	Country     string   `json:"country"`
+	Lat         *float64 `json:"lat"`
+	Lng         *float64 `json:"lng"`
+	Cuisines    []string `json:"cuisines"`
+	Pricing     struct {
+		CostForTwo *int   `json:"costForTwo"`
+		Currency   string `json:"currency"`
+		PriceRange int    `json:"priceRange"`
+	} `json:"pricing"`
+	Flags FlagsDTO `json:"flags"`
+}
+
+func (r CreateRestaurantRequest) toRestaurant() *pkg.Restaurant {
+	cuisines, keys := pkg.NormalizeCuisines(r.Cuisines)
+	currency := pkg.NormalizeCurrency(r.Pricing.Currency)
+	if currency == "" {
+		currency = "INR"
+	}
+	out := &pkg.Restaurant{
+		Name: strings.TrimSpace(r.Name),
+		Address: pkg.Address{
+			Line:        strings.TrimSpace(r.Address),
+			Locality:    strings.TrimSpace(r.Locality),
+			City:        strings.TrimSpace(r.City),
+			CountryCode: r.CountryCode,
+			Country:     strings.TrimSpace(r.Country),
+		},
+		Cuisines:    cuisines,
+		CuisineKeys: keys,
+		Pricing:     pkg.Pricing{CostForTwo: r.Pricing.CostForTwo, Currency: currency, PriceRange: r.Pricing.PriceRange},
+		Flags:       pkg.Flags(r.Flags), // same fields, only tags differ
+		Attributes:  map[string]any{},
+		Source:      pkg.SourceInfo{Dataset: "api"},
+	}
+	if r.Lat != nil && r.Lng != nil {
+		out.Location = pkg.NewGeoPoint(*r.Lat, *r.Lng)
+	}
+	return out
 }
