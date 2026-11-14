@@ -9,7 +9,7 @@ import (
 type Restaurant struct {
 	ID          bson.ObjectID  `bson:"_id,omitempty"`
 	TenantID    string         `bson:"tenantId"`
-	SourceID    int64          `bson:"sourceId"`
+	SourceID    int64          `bson:"sourceId,omitempty"`
 	Name        string         `bson:"name"`
 	Address     Address        `bson:"address"`
 	Location    *GeoPoint      `bson:"location,omitempty"`
