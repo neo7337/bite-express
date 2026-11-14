@@ -59,12 +59,12 @@ func OpenConnections() (err error) {
 
 func OpenMongoDbConnection(connection config.Connection) (db *mongodb_repo.MongoDBRepo, err error) {
 	client := mongodb_repo.NewMongoDBRepo()
-	cl, err := client.Connect(connection)
+	db, err = client.Connect(connection)
 	if err != nil {
 		err = errors.New("Failed to connect to Mongodb: " + err.Error())
 		return
 	}
-	connectionClosers.Add(cl)
+	connectionClosers.Add(db)
 	logger.Info("MongoDB Connection Initialised")
 	return
 }

@@ -24,7 +24,7 @@ func (m *MongoDBRepo) Connect(connection config.Connection) (*MongoDBRepo, error
 		Username:   connection.Username,
 		Password:   connection.Password,
 	}
-	uri := ""
+	uri := connection.Uri
 	client, err := mongo.Connect(options.Client().ApplyURI(uri).SetAuth(credential))
 	if err != nil {
 		logger.ErrorF("failed to connect to database: %v", err)
