@@ -42,6 +42,7 @@ type ListFilters struct {
 	Desc      bool
 	Limit     int
 	Offset    int
+	MinVotes  *int
 }
 
 type ListItem struct {
@@ -54,8 +55,15 @@ type ListResult struct {
 	HasMore bool
 }
 
+// Vocabulary is the set of cities and cuisines present in the data for a tenant.
+type Vocabulary struct {
+	Cities   []string
+	Cuisines []string
+}
+
 type RestaurantsRepository interface {
 	Insert(ctx context.Context, r *pkg.Restaurant) (*pkg.Restaurant, error)
 	FindRestaurantById(ctx context.Context, tenantID, id string) (*pkg.Restaurant, error)
 	List(ctx context.Context, f ListFilters) (ListResult, error)
+	Vocabulary(ctx context.Context, tenantID string) (Vocabulary, error)
 }

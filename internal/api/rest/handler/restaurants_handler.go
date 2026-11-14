@@ -67,6 +67,12 @@ func (h *RestaurantsHandler) FindRestaurantById(ctx rest.ServerContext) {
 		pkg.ResponseJSON(ctx, http.StatusBadRequest, map[string]string{"error": "missing restaurant id"})
 		return
 	}
+	// The router matches the "/:id" wildcard before the literal "/search" route,
+	// so a search request lands here. Hand it over to the search handler.
+	if id == "search" {
+		h.SearchRestaurants(ctx)
+		return
+	}
 	status, body := h.findByID(ctx.Context(), id)
 	pkg.ResponseJSON(ctx, status, body)
 }

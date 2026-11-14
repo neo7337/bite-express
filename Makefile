@@ -5,7 +5,7 @@ TENANT ?= biteexpress
 
 .DEFAULT_GOAL := help
 
-.PHONY: build-seed seed test
+.PHONY: build-seed seed test server
 
 build-seed: # build seed target
 	go build -o ./build/seed ./cmd/seed
@@ -15,3 +15,6 @@ seed: ## Seed the data
 
 test: ## Run the Go tests
 	go test ./...
+
+server:
+	go run ./cmd/server

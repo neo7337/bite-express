@@ -19,10 +19,16 @@ import (
 // fakeSvc implements restaurantService. All receivers are pointers so that
 // *fakeSvc satisfies the interface and captured state is shared.
 type fakeSvc struct {
-	r         *pkg.Restaurant
-	err       error
-	created   *pkg.Restaurant // captured by CreateRestaurant
-	searchedQ string
+	r       *pkg.Restaurant
+	err     error
+	created *pkg.Restaurant // captured by CreateRestaurant
+
+	// search
+	searchCalls     int
+	searchedQ       string
+	searchedFilters repository.ListFilters
+	result          repository.ListResult
+	intent          nlq.Intent
 }
 
 func (f *fakeSvc) GetRestaurants(context.Context, repository.ListFilters) (repository.ListResult, error) {
@@ -42,9 +48,10 @@ func (f *fakeSvc) CreateRestaurant(_ context.Context, r *pkg.Restaurant) (*pkg.R
 	return r, nil
 }
 
-func (f *fakeSvc) SearchRestaurants(_ context.Context, q string, _ repository.ListFilters) (repository.ListResult, nlq.Intent, error) {
-	f.searchedQ = q // add a searchedQ string field to fakeSvc
-	return repository.ListResult{}, nlq.Intent{}, f.err
+func (f *fakeSvc) SearchRestaurants(_ context.Context, q string, lf repository.ListFilters) (repository.ListResult, nlq.Intent, error) {
+	f.searchCalls++
+	f.searchedQ, f.searchedFilters = q, lf
+	return f.result, f.intent, f.err
 }
 
 func TestFindByID_StatusMapping(t *testing.T) {

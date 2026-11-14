@@ -19,8 +19,9 @@ func RouterHandler(server rest.Server) rest.Server {
 
 	// register handlers
 	server.Get("/v1/restaurants", restaurantHandler.ListRestaurants)
+	// "search" must be registered before "/:id", otherwise it is matched as an id
+	server.Get("/v1/restaurants/search", restaurantHandler.SearchRestaurants)
 	server.Get("/v1/restaurants/:id", restaurantHandler.FindRestaurantById)
 	server.Post("/v1/restaurants", restaurantHandler.CreateRestaurant)
-	server.Get("/v1/restaurants/search", restaurantHandler.SearchRestaurants)
 	return server
 }

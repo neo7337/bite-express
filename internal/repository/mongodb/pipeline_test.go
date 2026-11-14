@@ -196,3 +196,41 @@ func TestBuildListPipeline_InvalidFilters(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildMatch_MinVotes(t *testing.T) {
+	votes := 50
+	m := buildMatch(normalizeFilters(repository.ListFilters{TenantID: "t", City: "Gurgaon", MinVotes: &votes}))
+	v, ok := field(m, "rating.votes")
+	if !ok {
+		t.Fatal("rating.votes filter missing")
+	}
+	if gte, _ := field(v.(bson.D), "$gte"); gte != 50 {
+		t.Errorf("$gte = %v", gte)
+	}
+	if tid, _ := field(m, "tenantId"); tid != "t" {
+		t.Error("tenant filter must survive alongside MinVotes")
+	}
+	if _, ok := field(m, "address.city"); !ok {
+		t.Error("other filters must survive alongside MinVotes")
+	}
+}
+
+func TestBuildMatch_NoMinVotesByDefault(t *testing.T) {
+	if _, ok := field(buildMatch(normalizeFilters(repository.ListFilters{TenantID: "t"})), "rating.votes"); ok {
+		t.Error("rating.votes should only be filtered when MinVotes is set")
+	}
+}
+
+func TestBuildListPipeline_MinVotesInsideGeoNearQuery(t *testing.T) {
+	votes := 10
+	p, err := buildListPipeline(repository.ListFilters{
+		TenantID: "t", MinVotes: &votes, Near: &repository.GeoFilter{Lat: 1, Lng: 1},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	q, _ := field(p[0][0].Value.(bson.D), "query")
+	if _, ok := field(q.(bson.D), "rating.votes"); !ok {
+		t.Error("MinVotes must be part of the $geoNear query, the first stage")
+	}
+}

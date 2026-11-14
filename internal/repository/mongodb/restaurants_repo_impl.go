@@ -121,3 +121,17 @@ func (m *MongoDBRestaurantsRepo) Insert(ctx context.Context, r *pkg.Restaurant) 
 	r.ID = id
 	return r, nil
 }
+
+func (m *MongoDBRestaurantsRepo) Vocabulary(ctx context.Context, tenantID string) (repository.Vocabulary, error) {
+	coll := m.Database.Collection(collectionRestaurants)
+	filter := bson.D{{Key: "tenantId", Value: tenantID}}
+
+	var cities, cuisines []string
+	if err := coll.Distinct(ctx, "address.city", filter).Decode(&cities); err != nil {
+		return repository.Vocabulary{}, fmt.Errorf("error reading cities: %w", err)
+	}
+	if err := coll.Distinct(ctx, "cuisineKeys", filter).Decode(&cuisines); err != nil {
+		return repository.Vocabulary{}, fmt.Errorf("error reading cuisines: %w", err)
+	}
+	return repository.Vocabulary{Cities: cities, Cuisines: cuisines}, nil
+}

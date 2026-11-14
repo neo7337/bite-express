@@ -16,6 +16,11 @@ type fakeRepo struct {
 	gotFilters repository.ListFilters
 	inserted   *pkg.Restaurant
 	err        error
+
+	vocab      repository.Vocabulary
+	vocabErrs  []error // returned in order, one per Vocabulary call
+	vocabCalls int
+	listCalls  int
 }
 
 func (f *fakeRepo) Insert(_ context.Context, r *pkg.Restaurant) (*pkg.Restaurant, error) {
@@ -28,7 +33,16 @@ func (f *fakeRepo) FindRestaurantById(_ context.Context, tenantID, id string) (*
 	return &pkg.Restaurant{Name: "x"}, f.err
 }
 
+func (f *fakeRepo) Vocabulary(context.Context, string) (repository.Vocabulary, error) {
+	f.vocabCalls++
+	if len(f.vocabErrs) >= f.vocabCalls && f.vocabErrs[f.vocabCalls-1] != nil {
+		return repository.Vocabulary{}, f.vocabErrs[f.vocabCalls-1]
+	}
+	return f.vocab, nil
+}
+
 func (f *fakeRepo) List(_ context.Context, lf repository.ListFilters) (repository.ListResult, error) {
+	f.listCalls++
 	f.gotFilters = lf
 	return repository.ListResult{}, f.err
 }

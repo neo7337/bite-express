@@ -97,6 +97,9 @@ func buildMatch(f repository.ListFilters) bson.D {
 			bson.D{{Key: "cuisineKeys", Value: constainsRegex(f.Text)}},
 		}})
 	}
+	if f.MinVotes != nil {
+		match = append(match, bson.E{Key: "rating.votes", Value: bson.D{{Key: "$gte", Value: *f.MinVotes}}})
+	}
 	return match
 }
 
