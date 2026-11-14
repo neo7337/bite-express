@@ -6,9 +6,11 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/neo7337/bite-express/internal/repository"
+	"github.com/neo7337/bite-express/internal/search/nlq"
 	"github.com/neo7337/bite-express/pkg"
 	"oss.nandlabs.io/golly/l3"
 	"oss.nandlabs.io/golly/rest"
@@ -24,6 +26,7 @@ type restaurantService interface {
 	CreateRestaurant(ctx context.Context, r *pkg.Restaurant) (*pkg.Restaurant, error)
 	GetRestaurants(ctx context.Context, lf repository.ListFilters) (repository.ListResult, error)
 	GetRestaurantById(ctx context.Context, id string) (*pkg.Restaurant, error)
+	SearchRestaurants(ctx context.Context, q string, explicit repository.ListFilters) (repository.ListResult, nlq.Intent, error)
 }
 
 type RestaurantsHandler struct {
@@ -126,4 +129,30 @@ func (h *RestaurantsHandler) create(ctx context.Context, body io.Reader) (int, a
 		return http.StatusInternalServerError, map[string]string{"error": "internal server error"}, ""
 	}
 	return http.StatusCreated, toDetailDTO(created), created.ID.Hex()
+}
+
+func (h *RestaurantsHandler) SearchRestaurants(ctx rest.ServerContext) {
+	status, body := h.search(ctx.Context(), ctx.GetRequest().URL.Query())
+	pkg.ResponseJSON(ctx, status, body)
+}
+
+func (h *RestaurantsHandler) search(ctx context.Context, query url.Values) (int, any) {
+	q, err := parseQuery(query.Get("q"))
+	if err != nil {
+		return http.StatusBadRequest, map[string]string{"error": err.Error()}
+	}
+	explicit, err := parseListFilters(query)
+	if err != nil {
+		return http.StatusBadRequest, map[string]string{"error": err.Error()}
+	}
+
+	list, intent, err := h.svc.SearchRestaurants(ctx, q, explicit)
+	switch {
+	case errors.Is(err, repository.ErrInvalidFilter), errors.Is(err, errBadParam):
+		return http.StatusBadRequest, map[string]string{"error": err.Error()}
+	case err != nil:
+		logger.ErrorF("Failed to search restaurants", "error", err)
+		return http.StatusInternalServerError, map[string]string{"error": "Internal server error"}
+	}
+	return http.StatusOK, toSearchResponse(list, intent)
 }

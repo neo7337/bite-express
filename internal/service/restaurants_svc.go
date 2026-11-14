@@ -5,6 +5,7 @@ import (
 
 	"github.com/neo7337/bite-express/internal/config"
 	"github.com/neo7337/bite-express/internal/repository"
+	"github.com/neo7337/bite-express/internal/search/nlq"
 	"github.com/neo7337/bite-express/pkg"
 )
 
@@ -37,4 +38,8 @@ func (r *RestaurantsService) GetRestaurantById(ctx context.Context, id string) (
 func (r *RestaurantsService) CreateRestaurant(ctx context.Context, restaurant *pkg.Restaurant) (*pkg.Restaurant, error) {
 	restaurant.TenantID = r.config.System.TenantID
 	return r.repo.Insert(ctx, restaurant)
+}
+
+func (r *RestaurantsService) SearchRestaurants(ctx context.Context, q string, explicit repository.ListFilters) (repository.ListResult, nlq.Intent, error) {
+
 }

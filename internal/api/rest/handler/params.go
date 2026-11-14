@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/neo7337/bite-express/internal/repository"
 )
@@ -148,4 +149,15 @@ func parseListFilters(q url.Values) (repository.ListFilters, error) {
 		f.Offset = *offset
 	}
 	return f, nil
+}
+
+const maxQueryLen = 200
+
+// parseQuery trims and collapses whitespace; empty means "no natural language query".
+func parseQuery(raw string) (string, error) {
+	q := strings.Join(strings.Fields(raw), " ")
+	if utf8.RuneCountInString(q) > maxQueryLen {
+		return "", badParam("q must be at most %d characters", maxQueryLen)
+	}
+	return q, nil
 }

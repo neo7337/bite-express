@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/neo7337/bite-express/internal/repository"
+	"github.com/neo7337/bite-express/internal/search/nlq"
 	"github.com/neo7337/bite-express/pkg"
 )
 
@@ -157,4 +158,33 @@ func (r CreateRestaurantRequest) toRestaurant() *pkg.Restaurant {
 		out.Location = pkg.NewGeoPoint(*r.Lat, *r.Lng)
 	}
 	return out
+}
+
+// InterpretedDTO echoes how q was understood, so clients can show or correct it.
+type InterpretedDTO struct {
+	City           string   `json:"city,omitempty"`
+	Cuisines       []string `json:"cuisines,omitempty"`
+	MaxCost        *int     `json:"maxCost,omitempty"`
+	MinRating      *float64 `json:"minRating,omitempty"`
+	MinVotes       *int     `json:"minVotes,omitempty"`
+	Best           bool     `json:"best,omitempty"`
+	Nearest        bool     `json:"nearest,omitempty"`
+	Text           string   `json:"text,omitempty"`
+	UnmatchedTerms []string `json:"unmatchedTerms,omitempty"`
+}
+
+type SearchResponse struct {
+	ListResponse                // flattens to items, hasMore
+	Interpreted  InterpretedDTO `json:"interpreted"`
+}
+
+func toSearchResponse(r repository.ListResult, in nlq.Intent) SearchResponse {
+	return SearchResponse{
+		ListResponse: toListResponse(r),
+		Interpreted: InterpretedDTO{
+			City: in.City, Cuisines: in.Cuisines, MaxCost: in.MaxCost,
+			MinRating: in.MinRating, MinVotes: in.MinVotes,
+			Best: in.Best, Nearest: in.Nearest, Text: in.Text, UnmatchedTerms: in.Unmatched,
+		},
+	}
 }
