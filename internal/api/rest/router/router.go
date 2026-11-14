@@ -19,5 +19,6 @@ func RouterHandler(server rest.Server) rest.Server {
 
 	// register handlers
 	server.Get("/v1/restaurants", restaurantHandler.ListRestaurants)
+	server.Get("/v1/restaurants/:id", restaurantHandler.FindRestaurantById)
 	return server
 }

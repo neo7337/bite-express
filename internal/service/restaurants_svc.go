@@ -5,6 +5,7 @@ import (
 
 	"github.com/neo7337/bite-express/internal/config"
 	"github.com/neo7337/bite-express/internal/repository"
+	"github.com/neo7337/bite-express/pkg"
 )
 
 type RestaurantsService struct {
@@ -25,4 +26,10 @@ func (r *RestaurantsService) GetRestaurants(ctx context.Context, lf repository.L
 	}
 	lr, err := r.repo.List(ctx, lf)
 	return lr, err
+}
+
+func (r *RestaurantsService) GetRestaurantById(ctx context.Context, id string) (*pkg.Restaurant, error) {
+	tenantId := r.config.System.TenantID
+	restaurant, err := r.repo.FindRestaurantById(ctx, tenantId, id)
+	return restaurant, err
 }

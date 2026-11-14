@@ -2,10 +2,12 @@ package mongodb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
 	"github.com/neo7337/bite-express/internal/repository"
+	"github.com/neo7337/bite-express/pkg"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -73,4 +75,24 @@ func (m *MongoDBRestaurantsRepo) List(ctx context.Context, f repository.ListFilt
 		items = items[:f.Limit]
 	}
 	return repository.ListResult{Items: items, HasMore: hasMore}, nil
+}
+
+func (m *MongoDBRestaurantsRepo) FindRestaurantById(ctx context.Context, tenantID, id string) (*pkg.Restaurant, error) {
+	parsedId, err := bson.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, repository.ErrInvalidId
+	}
+	filter := bson.M{
+		"_id":      parsedId,
+		"tenantId": tenantID,
+	}
+	var restaurant *pkg.Restaurant
+	err = m.Database.Collection(collectionRestaurants).FindOne(ctx, filter).Decode(&restaurant)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, repository.ErrNotFound
+		}
+		return nil, err
+	}
+	return restaurant, nil
 }
