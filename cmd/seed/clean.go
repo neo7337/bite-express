@@ -47,29 +47,15 @@ func cleanRow(row map[string]string) (pkg.Restaurant, string) {
 	lat, errLat := strconv.ParseFloat(get("Latitude"), 64)
 	valid := errLng == nil && errLat == nil && lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90 && !(lng == 0 && lat == 0)
 	if valid {
-		r.Location = &pkg.GeoPoint{Type: "Point", Coordinates: []float64{lng, lat}}
+		r.Location = pkg.NewGeoPoint(lat, lng)
 	}
 
-	seen := map[string]bool{}
-	for _, c := range strings.Split(get("Cuisines"), ",") {
-		c = strings.Join(strings.Fields(c), " ")
-		key := strings.ToLower(c)
-		if c == "" || seen[key] {
-			continue
-		}
-		seen[key] = true
-		r.Cuisines = append(r.Cuisines, c)
-		r.CuisineKeys = append(r.CuisineKeys, key)
-	}
+	r.Cuisines, r.CuisineKeys = pkg.NormalizeCuisines(strings.Split(get("Cuisines"), ","))
 
 	if n, err := strconv.Atoi(get("Average Cost for two")); err == nil && n > 0 {
 		r.Pricing.CostForTwo = &n
 	}
-
-	r.Pricing.Currency = get("Currency")
-	if r.Pricing.Currency == "Indian Rupees(Rs.)" {
-		r.Pricing.Currency = "INR"
-	}
+	r.Pricing.Currency = pkg.NormalizeCurrency(get("Currency"))
 	r.Pricing.PriceRange, _ = strconv.Atoi(get("Price Range"))
 	r.Rating.Text = get("Rating text")
 	r.Rating.Votes, _ = strconv.Atoi(get("Votes"))
