@@ -54,7 +54,7 @@ type ListResult struct {
 }
 
 type RestaurantsRepository interface {
-	Insert(ctx context.Context, r *pkg.Restaurant) (*pkg.Restaurant, error)
-	FindById(ctx context.Context, tenantID, id string) (*pkg.Restaurant, error)
+	//Insert(ctx context.Context, r *pkg.Restaurant) (*pkg.Restaurant, error)
+	// FindById(ctx context.Context, tenantID, id string) (*pkg.Restaurant, error)
 	List(ctx context.Context, f ListFilters) (ListResult, error)
 }

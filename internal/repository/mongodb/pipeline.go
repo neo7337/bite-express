@@ -85,7 +85,7 @@ func buildMatch(f repository.ListFilters) bson.D {
 		cost = append(cost, bson.E{Key: "$gt", Value: 0})
 	}
 	if len(cost) > 0 {
-		match = append(cost, bson.E{Key: "pricing.costForTwo", Value: cost})
+		match = append(match, bson.E{Key: "pricing.costForTwo", Value: cost})
 	}
 	if f.Currency != "" {
 		match = append(match, bson.E{Key: "pricing.currency", Value: f.Currency})

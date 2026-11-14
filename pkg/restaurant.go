@@ -14,7 +14,7 @@ type Restaurant struct {
 	Address     Address        `bson:"address"`
 	Location    *GeoPoint      `bson:"location,omitempty"`
 	Cuisines    []string       `bson:"cuisines"`
-	CuisineKeys []string       `bson:"cuisinekeys"`
+	CuisineKeys []string       `bson:"cuisineKeys"`
 	Pricing     Pricing        `bson:"pricing"`
 	Rating      Rating         `bson:"rating"`
 	Flags       Flags          `bson:"flags"`

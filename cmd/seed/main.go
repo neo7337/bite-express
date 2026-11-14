@@ -61,7 +61,7 @@ func main() {
 		doc.TenantID = *tenant
 		doc.CreatedAt, doc.UpdatedAt = now, now
 		models = append(models, mongo.NewReplaceOneModel().
-			SetFilter(bson.D{{"tenantId", doc.TenantID}, {"sourceID", doc.SourceID}}).
+			SetFilter(bson.D{{"tenantId", doc.TenantID}, {"sourceId", doc.SourceID}}).
 			SetReplacement(doc).
 			SetUpsert(true))
 	}

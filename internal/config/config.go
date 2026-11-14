@@ -42,6 +42,7 @@ type System struct {
 	Name         string `yaml:"name"`
 	Version      string `yaml:"version"`
 	Description  string `yaml:"description"`
+	TenantID     string `yaml:"tenantId,omitempty"`
 	Timezone     string `yaml:"timezone"`
 }
 
