@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/neo7337/bite-express/internal/repository"
 	"github.com/neo7337/bite-express/pkg"
@@ -95,4 +96,28 @@ func (m *MongoDBRestaurantsRepo) FindRestaurantById(ctx context.Context, tenantI
 		return nil, err
 	}
 	return restaurant, nil
+}
+
+func (m *MongoDBRestaurantsRepo) Insert(ctx context.Context, r *pkg.Restaurant) (*pkg.Restaurant, error) {
+	if r == nil {
+		return nil, fmt.Errorf("%w: nil restaurant", repository.ErrInvalidFilter)
+	}
+
+	now := time.Now().UTC()
+	r.ID = bson.ObjectID{}
+	r.CreatedAt, r.UpdatedAt = now, now
+
+	res, err := m.Database.Collection(collectionRestaurants).InsertOne(ctx, r)
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return nil, repository.ErrConflict
+		}
+		return nil, fmt.Errorf("error inserting document: %w", err)
+	}
+	id, ok := res.InsertedID.(bson.ObjectID)
+	if !ok {
+		return nil, fmt.Errorf("unexpected inserted id type %T", res.InsertedID)
+	}
+	r.ID = id
+	return r, nil
 }

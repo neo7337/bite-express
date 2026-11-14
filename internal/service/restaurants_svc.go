@@ -33,3 +33,8 @@ func (r *RestaurantsService) GetRestaurantById(ctx context.Context, id string) (
 	restaurant, err := r.repo.FindRestaurantById(ctx, tenantId, id)
 	return restaurant, err
 }
+
+func (r *RestaurantsService) CreateRestaurant(ctx context.Context, restaurant *pkg.Restaurant) (*pkg.Restaurant, error) {
+	restaurant.TenantID = r.config.System.TenantID
+	return r.repo.Insert(ctx, restaurant)
+}

@@ -18,3 +18,11 @@ func TestFindRestaurantById_InvalidID(t *testing.T) {
 		}
 	}
 }
+
+// A nil restaurant is rejected before the database is touched, so no Mongo is needed.
+func TestInsert_NilRestaurant(t *testing.T) {
+	r, err := (&MongoDBRestaurantsRepo{}).Insert(context.Background(), nil)
+	if err == nil || r != nil {
+		t.Fatalf("got (%v, %v), want an error", r, err)
+	}
+}

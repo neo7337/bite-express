@@ -11,6 +11,7 @@ var (
 	ErrNotFound      = errors.New("restaurant not found")
 	ErrInvalidId     = errors.New("invalid restaurant id")
 	ErrInvalidFilter = errors.New("invalid filter")
+	ErrConflict      = errors.New("restaurant already exists")
 )
 
 type SortField string
@@ -54,7 +55,7 @@ type ListResult struct {
 }
 
 type RestaurantsRepository interface {
-	//Insert(ctx context.Context, r *pkg.Restaurant) (*pkg.Restaurant, error)
+	Insert(ctx context.Context, r *pkg.Restaurant) (*pkg.Restaurant, error)
 	FindRestaurantById(ctx context.Context, tenantID, id string) (*pkg.Restaurant, error)
 	List(ctx context.Context, f ListFilters) (ListResult, error)
 }
