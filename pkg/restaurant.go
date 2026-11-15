@@ -32,7 +32,7 @@ type Address struct {
 	Country     string `bson:"country"`
 }
 
-// Coordinates are [latitude, longitude]
+// Coordinates are GeoJSON order: [longitude, latitude]
 type GeoPoint struct {
 	Type        string    `bson:"type"`
 	Coordinates []float64 `bson:"coordinates"`

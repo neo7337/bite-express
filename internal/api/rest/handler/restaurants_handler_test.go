@@ -23,6 +23,11 @@ type fakeSvc struct {
 	err     error
 	created *pkg.Restaurant // captured by CreateRestaurant
 
+	// list
+	listedFilters repository.ListFilters
+	listResult    repository.ListResult
+	listErr       error
+
 	// search
 	searchCalls     int
 	searchedQ       string
@@ -31,8 +36,9 @@ type fakeSvc struct {
 	intent          nlq.Intent
 }
 
-func (f *fakeSvc) GetRestaurants(context.Context, repository.ListFilters) (repository.ListResult, error) {
-	return repository.ListResult{}, nil
+func (f *fakeSvc) GetRestaurants(_ context.Context, lf repository.ListFilters) (repository.ListResult, error) {
+	f.listedFilters = lf
+	return f.listResult, f.listErr
 }
 
 func (f *fakeSvc) GetRestaurantById(context.Context, string) (*pkg.Restaurant, error) {

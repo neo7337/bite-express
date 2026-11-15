@@ -27,7 +27,7 @@ curl "localhost:8082/api/v1/restaurants?city=Gurgaon&limit=3"
 
 > **Seed before you search.** The natural-language search learns the known cities and
 > cuisines from the data the first time it is used and keeps them until the API restarts.
-> If you searched before seeding, run `docker-compose restart api`.
+> If you searched before seeding, run `docker compose restart api`.
 
 ```bash
 make help    # list all make targets
@@ -37,10 +37,15 @@ make down    # stop everything (data is kept in the mongo_data volume)
 Optional: `mongo-express` (a MongoDB browser) is part of the Compose file on
 http://localhost:8081.
 
+> **Demo credentials only.** `secretpassword` (MongoDB root) and the mongo-express login in
+> `docker-compose.yml`, `config-local.yml` and `config-docker.yml` are throwaway values for
+> local demos. Never reuse them. In a real deployment, inject credentials from a secret
+> manager or environment variables, enable TLS, and do not publish port 27017.
+
 ### Run the API without Docker
 
 ```bash
-docker-compose up -d mongodb   # just the database
+docker compose up -d mongodb   # just the database
 make seed
 make server                    # APP_ENV=local, uses config-local.yml, listens on :8082
 ```
@@ -178,7 +183,7 @@ Switch it off for a comparison run without editing files:
 
 ```bash
 BITE_CACHE_ENABLED=false make server                    # local
-BITE_CACHE_ENABLED=false docker-compose up -d api       # Docker (recreates the api container)
+BITE_CACHE_ENABLED=false docker compose up -d api       # Docker (recreates the api container)
 ```
 
 Limits to know about:
@@ -259,15 +264,31 @@ Next steps:
 ## Tests
 
 ```bash
-make test        # go test ./...
+make test               # unit tests: go test ./...
+make test-integration   # integration tests against a real MongoDB (needs Docker)
+make test-e2e           # starts the stack, seeds it, tests every endpoint over HTTP
+make lint               # golangci-lint (config in .golangci.yml)
 ```
 
-Covered: query-parameter parsing and validation, DTO mapping, handler status codes (with a
-fake service), service-level merging of the parsed query with explicit filters, the NLQ
-parser and lexicon, aggregation-pipeline construction, seed row cleaning, the cache
+Unit tests cover: query-parameter parsing and validation, DTO mapping, handler status codes
+(with a fake service), service-level merging of the parsed query with explicit filters, the
+NLQ parser and lexicon, aggregation-pipeline construction, seed row cleaning, the cache
 (expiry, eviction, concurrent loads, invalidation) and the caching repository.
 
-Not covered: tests against a real MongoDB and end-to-end HTTP tests.
+Integration tests (`//go:build integration`) run the real MongoDB repository against a live
+database: index creation, insert, find by id, duplicate-key conflict, filtering by city and
+cuisine, and `$geoNear` distance sorting. They use a throwaway database that is dropped
+afterwards. `make test-integration` starts MongoDB from `docker-compose.yml` and points the
+tests at it through `MONGO_URI`. If `MONGO_URI` is unset the tests are skipped.
+
+CI (`.github/workflows/ci.yml`) runs lint, unit and integration tests, and the end-to-end
+tests (Compose stack plus seed) on every push and pull request.
+
+End-to-end tests (`test/e2e`, build tag `e2e`) call the running API over HTTP with the seeded
+Zomato data: create and fetch, validation errors (400/413/415), 404s, list filtering, sorting,
+pagination and distance, cache invalidation after a create, the three natural-language
+examples from the brief, and bad input on search. `make test-e2e` runs them; set `API_URL` to
+test an API that is already running.
 
 ## Project layout
 
@@ -336,7 +357,9 @@ Not covered: tests against a real MongoDB and end-to-end HTTP tests.
 ├── config-docker.yml             settings used inside Docker Compose
 ├── Dockerfile                    multi-stage build of the API image
 ├── docker-compose.yml            mongodb, mongo-express, api
-├── Makefile                      up, down, seed, server, test, help
+├── Makefile                      up, down, seed, server, test, test-integration, lint, help
+├── .golangci.yml                 linter configuration
+├── .github/workflows/ci.yml      lint + unit + integration tests
 ├── go.mod / go.sum
 └── LICENSE
 ```

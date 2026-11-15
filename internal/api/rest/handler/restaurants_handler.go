@@ -40,24 +40,26 @@ func NewRestaurantsHandler(svc restaurantService) *RestaurantsHandler {
 }
 
 func (h *RestaurantsHandler) ListRestaurants(ctx rest.ServerContext) {
-	// NOTE: the only golly-specific call for query access; adjust here if the API differs.
-	filters, err := parseListFilters(ctx.GetRequest().URL.Query())
+	status, body := h.list(ctx.Context(), ctx.GetRequest().URL.Query())
+	pkg.ResponseJSON(ctx, status, body)
+}
+
+// list holds the endpoint logic without any HTTP framework types.
+func (h *RestaurantsHandler) list(ctx context.Context, query url.Values) (int, any) {
+	filters, err := parseListFilters(query)
 	if err != nil {
-		pkg.ResponseJSON(ctx, 400, map[string]string{"error": err.Error()})
-		return
+		return http.StatusBadRequest, map[string]string{"error": err.Error()}
 	}
 
-	list, err := h.svc.GetRestaurants(ctx.Context(), filters)
-	if err != nil {
-		if errors.Is(err, repository.ErrInvalidFilter) {
-			pkg.ResponseJSON(ctx, 400, map[string]string{"error": err.Error()})
-			return
-		}
+	list, err := h.svc.GetRestaurants(ctx, filters)
+	switch {
+	case errors.Is(err, repository.ErrInvalidFilter):
+		return http.StatusBadRequest, map[string]string{"error": err.Error()}
+	case err != nil:
 		logger.ErrorF("Failed to list restaurants", "error", err)
-		pkg.ResponseJSON(ctx, 500, map[string]string{"error": "Internal Server Error"})
-		return
+		return http.StatusInternalServerError, map[string]string{"error": "Internal Server Error"}
 	}
-	pkg.ResponseJSON(ctx, 200, toListResponse(list))
+	return http.StatusOK, toListResponse(list)
 }
 
 // FindRestaurantById serves GET /v1/restaurants/:id.
