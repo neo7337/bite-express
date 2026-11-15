@@ -23,7 +23,7 @@ func GetRepoConnection(manager lifecycle.ComponentManager) *lifecycle.SimpleComp
 		},
 		AfterStart: func(err error) {
 			if err != nil {
-				logger.ErrorF("Failed to open connections", "error", err)
+				logger.ErrorF("Failed to open connections: %v", err)
 				manager.StopAll()
 			} else {
 				logger.Info("Connections opened successfully")
@@ -40,15 +40,15 @@ func OpenConnections() (err error) {
 	configDetails := config.GetConfig()
 	for _, provider := range configDetails.Repository.Providers {
 		if !provider.Enabled {
-			logger.InfoF("Skipping disabled provider", "name", provider.Name)
+			logger.InfoF("Skipping disabled provider: %v", provider.Name)
 			continue
 		}
-		logger.Info("Opening connection for provider", "name", provider.Name)
+		logger.Info("Opening connection for provider: %v", provider.Name)
 		switch provider.Name {
 		case "mongodb":
 			conn, err := OpenMongoDbConnection(provider.Connection)
 			if err != nil {
-				logger.ErrorF("Failed to open a connection", "error", err)
+				logger.ErrorF("Failed to open a connection: %v", err)
 				return err
 			}
 			return RegisterMongoRepos(conn, provider.Modules)
