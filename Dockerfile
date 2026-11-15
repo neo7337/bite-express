@@ -15,6 +15,7 @@ RUN adduser -D -u 10001 app
 WORKDIR /app
 COPY --from=build /out/server /app/server
 COPY config-*.yml /app/
+RUN chmod 0644 /app/config-*.yml
 USER app
 EXPOSE 8082
 ENTRYPOINT ["/app/server"]

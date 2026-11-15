@@ -1,8 +1,10 @@
 package connections
 
 import (
+	"context"
 	"errors"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/neo7337/bite-express/internal/config"
@@ -16,6 +18,11 @@ import (
 
 var connectionClosers = collections.NewArrayList[io.Closer]()
 var logger = l3.Get()
+
+var (
+	mongoConnMu sync.RWMutex
+	mongoConn   *mongodb_repo.MongoDBRepo
+)
 
 func GetRepoConnection(manager lifecycle.ComponentManager) *lifecycle.SimpleComponent {
 	connectionManager := &lifecycle.SimpleComponent{
@@ -67,6 +74,9 @@ func OpenMongoDbConnection(connection config.Connection) (db *mongodb_repo.Mongo
 		return
 	}
 	connectionClosers.Add(db)
+	mongoConnMu.Lock()
+	mongoConn = db
+	mongoConnMu.Unlock()
 	logger.Info("MongoDB Connection Initialised")
 	return
 }
@@ -91,6 +101,9 @@ func CloseConnections() (err error) {
 			it.Next().Close()
 		}
 	}
+	mongoConnMu.Lock()
+	mongoConn = nil
+	mongoConnMu.Unlock()
 	return
 }
 
@@ -114,4 +127,16 @@ func withCache(repo repository.RestaurantsRepository) repository.RestaurantsRepo
 	c.StartStatsLogger(cacheStatsInterval, logger.InfoF)
 	logger.InfoF("Read cache enabled (in-memory, ttl=%v, maxEntries=%d)", ttl, cfg.Cache.Config.MaxEntries)
 	return c
+}
+
+var ErrNoDatabase = errors.New("no database connection")
+
+func PingDB(ctx context.Context) error {
+	mongoConnMu.RLock()
+	conn := mongoConn
+	mongoConnMu.RUnlock()
+	if conn == nil {
+		return ErrNoDatabase
+	}
+	return conn.Ping(ctx)
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/neo7337/bite-express/internal/config"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 )
 
 type MongoDBRepo struct {
@@ -46,4 +47,11 @@ func (m *MongoDBRepo) Close() error {
 		m.Client = nil
 	}
 	return nil
+}
+
+func (m *MongoDBRepo) Ping(ctx context.Context) error {
+	if m.Client == nil {
+		return errors.New("mongo client is not initialised")
+	}
+	return m.Client.Ping(ctx, readpref.Primary())
 }
