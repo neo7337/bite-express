@@ -1,0 +1,6 @@
+.git
+build
+data/file*.json
+data/*.xlsx
+*.md
+.env

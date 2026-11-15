@@ -2,12 +2,18 @@ services:
   mongodb:
     image: mongo:latest
     container_name: mongodb
-    restart: always
+    restart: unless-stopped
     ports:
       - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: secretpassword
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "-u", "admin", "-p", "secretpassword",
+             "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     volumes:
       - mongo_data:/data/db
 
@@ -25,6 +31,20 @@ services:
       ME_CONFIG_BASICAUTH_PASSWORD: pass
     depends_on:
       - mongodb
+
+  api:
+    build: { context: ., target: api }
+    depends_on:
+      mongodb: { condition: service_healthy }
+    environment:
+      APP_ENV: docker
+    ports: ["8082:8082"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/api/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
 volumes:
   mongo_data:
