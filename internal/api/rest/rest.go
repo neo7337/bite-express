@@ -7,15 +7,12 @@ import (
 	"oss.nandlabs.io/golly/rest"
 )
 
-var componentManager lifecycle.ComponentManager
-
 func GetRestServer(manager lifecycle.ComponentManager) lifecycle.Component {
 	conf := config.GetConfig()
 	serverOptions := rest.DefaultSrvOptions()
 	serverOptions.PathPrefix = "/api"
 	serverOptions.ListenHost = conf.System.Host
 	serverOptions.ListenPort = int16(conf.System.Port)
-	componentManager = manager
 
 	server, err := rest.NewServer(serverOptions)
 	if err != nil {

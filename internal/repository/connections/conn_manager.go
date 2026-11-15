@@ -98,7 +98,7 @@ func RegisterMongoRepos(conn *mongodb_repo.MongoDBRepo, modules []string) error 
 func CloseConnections() (err error) {
 	if !connectionClosers.IsEmpty() {
 		for it := connectionClosers.Iterator(); it.HasNext(); {
-			it.Next().Close()
+			_ = it.Next().Close() // best effort on shutdown
 		}
 	}
 	mongoConnMu.Lock()

@@ -84,7 +84,7 @@ func LoadConfig(configPath string) (*Config, error) {
 			loadErr = err
 			return
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		var c Config
 		decoder := yaml.NewDecoder(file)

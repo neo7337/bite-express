@@ -4,6 +4,7 @@ run:
   timeout: 5m
   build-tags:
     - integration
+    - e2e
 
 linters:
   default: none
@@ -16,6 +17,23 @@ linters:
     - misspell
     - bodyclose
     - errorlint
+  settings:
+    govet:
+      disable:
+        # bson.D{{"key", value}} is the idiomatic way to build MongoDB documents
+        - composites
+  exclusions:
+    rules:
+      # tests deliberately warm caches or exercise calls without using the result
+      - path: _test\.go
+        linters:
+          - errcheck
+      # golly's router/lifecycle/response helpers return errors that have no useful
+      # recovery here: route registration happens at startup and a failed response
+      # write means the client has already gone away
+      - linters:
+          - errcheck
+        text: "Error return value of `(server\\.(Get|Post)|manager\\.(AddDependency|StopAll)|connectionClosers\\.Add|ctx\\.WriteJSON)`"
 
 formatters:
   enable:
