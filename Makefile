@@ -5,7 +5,7 @@ TENANT ?= biteexpress
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build-seed seed test test-integration test-e2e lint server up down
+.PHONY: help build-seed seed test test-integration test-e2e loadtest loadtest-peak lint server up down
 
 help: ## Show targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-10s %s\n",$$1,$$2}'
@@ -27,6 +27,12 @@ test-e2e: ## Start the stack, seed the data, run API tests over real HTTP (needs
 	docker compose up --build -d --wait mongodb api
 	$(MAKE) seed
 	go test -tags=e2e -count=1 ./test/e2e/...
+
+loadtest: ## Peak-hour load test (needs k6 and a running, seeded stack)
+	k6 run loadtest/k6.js
+
+loadtest-peak: ## Peak load-test
+	k6 run -e PEAK_RPS=300 loadtest/k6.js 
 
 lint: ## Run golangci-lint
 	golangci-lint run ./...

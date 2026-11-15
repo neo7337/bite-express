@@ -33,3 +33,6 @@ go.work.sum
 # .vscode/
 
 build/
+# load-test summaries
+cache-on.json
+cache-off.json

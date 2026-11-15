@@ -2,6 +2,41 @@
 
 Restaurant discovery API for **BiteExpress**. Go + MongoDB, with filtered listing, geo-distance sorting, and a natural-language search endpoint.
 
+## How this maps to BiteExpress's goals
+
+| Goal | What the MVP does about it | What comes next |
+|---|---|---|
+| **Peak-hour reliability and performance (6-12 months), so traffic spikes do not cost revenue** | Read-through cache in front of MongoDB, with single-flight so identical concurrent requests share one query. Distance, filtering and sorting run in one `$geoNear` aggregation backed by compound indexes. Bounded page sizes (max 100). `/readyz` checks MongoDB so a load balancer can drain a sick instance. Input limits and validation protect the API. The cache can be switched off to measure its effect (see *Load test*). | Shared Redis cache, `secondaryPreferred` reads, request timeouts, rate limiting, metrics. |
+| **Conversion: help hungry customers find food fast** | Natural-language search with an `interpreted` echo the app can show and correct. "Best" requires a minimum vote count, so a 5.0 from two votes cannot win. | Atlas Search for fuzzy text and autocomplete, locality recognition. |
+| **Cloud-native, 2-3 years** | Stateless, containerised API. Small interfaces (`RestaurantsRepository`, `cache.Provider`) so the cache and datastore can be swapped without touching handlers. | MongoDB Atlas, Kubernetes, secrets from a manager. |
+| **Coexist with the on-prem relational monolith** | Idempotent seed keyed on `(tenantId, sourceId)` shows the ingestion shape: re-runnable, no duplicates. | CDC from the relational database into MongoDB, then phased traffic cut-over by endpoint. |
+| **International expansion and global data regulation** | `country`, `countryCode` and `currency` are first-class fields. Prices are normalised to ISO currency codes. | Zone sharding by region for data residency, field-level encryption for PII, per-region config. |
+| **General purpose: usable by several similar businesses** | Multi-tenant from day one: `tenantId` leads every index and every query and is forced server-side on create. A free-form `attributes` field holds per-business fields without migrations. | Per-request tenant from an API key or JWT, per-tenant configuration. |
+
+Deliberately out of scope for the MVP, and how they would be handled: authentication and
+per-request tenancy (tenant comes from config today), PII and compliance controls, and
+production observability. They are listed in *Scaling and roadmap*.
+
+## Toolchain with mise (optional)
+
+[mise](https://mise.jdx.dev) installs the exact tool versions this project needs, scoped to
+the project directory, so nothing has to be installed globally:
+
+```bash
+brew install mise            # or: curl https://mise.run | sh
+mise trust && mise install   # Go, golangci-lint v2 and k6, pinned in mise.toml
+mise run test                # run a task, or use `mise exec -- make test`
+mise run test-e2e
+mise run loadtest
+```
+
+To get the tools on your `PATH` in an interactive shell, add `eval "$(mise activate zsh)"`
+(or bash/fish) to your shell profile; then plain `make seed`, `make lint` and `make loadtest`
+work inside the project directory.
+
+Docker is the one prerequisite mise does not provide: the stack (`make up`), `make seed`,
+`make test-integration` and `make test-e2e` need a running Docker daemon.
+
 ## Quick Start (Docker)
 
 Requires Docker and, for the seed step, Go (see `go.mod`).
@@ -290,6 +325,40 @@ pagination and distance, cache invalidation after a create, the three natural-la
 examples from the brief, and bad input on search. `make test-e2e` runs them; set `API_URL` to
 test an API that is already running.
 
+## Load test
+
+`loadtest/k6.js` simulates a peak-hour rush with [k6](https://k6.io) (`brew install k6`). It
+ramps from a quiet baseline to a peak request rate, holds it, then recovers. The traffic mix
+is 50% city and cuisine listings, 15% nearby searches, 25% natural-language searches and 10%
+restaurant detail pages. Thresholds: under 1% errors, and p95 latency below 300 ms for
+lists, 400 ms for search and 200 ms for detail.
+
+```bash
+make up && make seed
+make loadtest                                   # defaults: 20 rps baseline, 150 rps peak
+k6 run -e PEAK_RPS=300 loadtest/k6.js           # heavier peak
+```
+
+Compare the cache on and off to see what it buys:
+
+```bash
+k6 run --summary-export=cache-on.json loadtest/k6.js
+BITE_CACHE_ENABLED=false docker compose up -d api
+k6 run --summary-export=cache-off.json loadtest/k6.js
+```
+
+Results on my machine (fill these in after running; numbers depend on hardware):
+
+| | cache on | cache off |
+|---|---|---|
+| p95 list | _ ms | _ ms |
+| p95 search | _ ms | _ ms |
+| p95 detail | _ ms | _ ms |
+| failed requests | _ % | _ % |
+
+Nearby searches use varying coordinates, so they rarely hit the cache. That is expected, and
+it makes them the part that shows MongoDB's `$geoNear` performance.
+
 ## Project layout
 
 ```
@@ -357,6 +426,8 @@ test an API that is already running.
 ├── config-docker.yml             settings used inside Docker Compose
 ├── Dockerfile                    multi-stage build of the API image
 ├── docker-compose.yml            mongodb, mongo-express, api
+├── loadtest/k6.js                peak-hour load test (k6)
+├── mise.toml                     pinned toolchain: Go, golangci-lint, k6
 ├── Makefile                      up, down, seed, server, test, test-integration, lint, help
 ├── .golangci.yml                 linter configuration
 ├── .github/workflows/ci.yml      lint + unit + integration tests

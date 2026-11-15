@@ -1,0 +1,46 @@
+# Developer toolchain. Run `mise install` once; every tool below is then on PATH
+# (inside this directory) without installing anything globally.
+#
+#   mise install            # install the pinned tools
+#   mise run test           # or: mise exec -- make test
+#   mise tasks              # list tasks
+#
+# Docker (or Podman with the docker CLI) is NOT managed by mise: `make up`,
+# `make test-integration`, `make test-e2e` and `make seed` need a running Docker daemon.
+
+[tools]
+go = "1.27.2"              # keep in step with go.mod and ARG GO_VERSION in the Dockerfile
+golangci-lint = "2"        # .golangci.yml uses the v2 config format
+k6 = "latest"
+
+[env]
+APP_ENV = "local"
+GOFLAGS = "-mod=readonly"
+
+[tasks.test]
+description = "Unit tests"
+run = "make test"
+
+[tasks.lint]
+description = "golangci-lint"
+run = "make lint"
+
+[tasks.seed]
+description = "Load data/zomato.csv into MongoDB (needs the stack running)"
+run = "make seed"
+
+[tasks.server]
+description = "Run the API on the host (needs MongoDB: docker compose up -d mongodb)"
+run = "make server"
+
+[tasks.test-integration]
+description = "Integration tests against a real MongoDB (starts it via Docker)"
+run = "make test-integration"
+
+[tasks.test-e2e]
+description = "Start the stack, seed it and test every endpoint over HTTP"
+run = "make test-e2e"
+
+[tasks.loadtest]
+description = "Peak-hour k6 load test (needs a running, seeded stack)"
+run = "make loadtest"
