@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"sync"
 
 	"gopkg.in/yaml.v2"
@@ -52,6 +53,8 @@ type CacheConfig struct {
 	Password string `yaml:"password"` // Cache password (if required)
 	Db       int    `yaml:"db"`       // Cache database number
 	Ttl      int    `yaml:"ttl"`      // Time to live for cache entries in seconds
+	// MaxEntries bounds the in-memory cache (list/search results; the by-id cache holds 10x).
+	MaxEntries int `yaml:"maxEntries"`
 }
 
 type Cache struct {
@@ -89,6 +92,7 @@ func LoadConfig(configPath string) (*Config, error) {
 			loadErr = err
 			return
 		}
+		applyEnvOverrides(&c)
 		conf = &c
 	})
 	if loadErr != nil {
@@ -110,4 +114,12 @@ func GetVersion() string {
 		return conf.System.Version
 	}
 	return "unknown"
+}
+
+// applyEnvOverrides lets an operator, or a benchmark run, switch the cache without editing
+// the YAML: BITE_CACHE_ENABLED=true|false. A value that does not parse is ignored.
+func applyEnvOverrides(c *Config) {
+	if v, err := strconv.ParseBool(os.Getenv("BITE_CACHE_ENABLED")); err == nil {
+		c.Cache.Enabled = v
+	}
 }

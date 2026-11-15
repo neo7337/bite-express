@@ -3,9 +3,11 @@ package connections
 import (
 	"errors"
 	"io"
+	"time"
 
 	"github.com/neo7337/bite-express/internal/config"
 	"github.com/neo7337/bite-express/internal/repository"
+	"github.com/neo7337/bite-express/internal/repository/cached"
 	mongodb_repo "github.com/neo7337/bite-express/internal/repository/mongodb"
 	"oss.nandlabs.io/golly/collections"
 	"oss.nandlabs.io/golly/l3"
@@ -77,7 +79,7 @@ func RegisterMongoRepos(conn *mongodb_repo.MongoDBRepo, modules []string) error 
 			if err != nil {
 				return err
 			}
-			repository.Manager.Register(repository.RestaurantsRepo, repo)
+			repository.Manager.Register(repository.RestaurantsRepo, withCache(repo))
 		}
 	}
 	return nil
@@ -90,4 +92,26 @@ func CloseConnections() (err error) {
 		}
 	}
 	return
+}
+
+const cacheStatsInterval = time.Minute
+
+// withCache wraps the repository in the read cache when cache.enabled is true. Only the
+// in-memory cache exists today; any other type is reported and ignored, so the service still
+// starts, just without a cache.
+func withCache(repo repository.RestaurantsRepository) repository.RestaurantsRepository {
+	cfg := config.GetConfig()
+	if cfg == nil || !cfg.Cache.Enabled {
+		logger.Info("Read cache disabled")
+		return repo
+	}
+	if t := cfg.Cache.Type; t != "" && t != "memory" {
+		logger.ErrorF("cache.type %q is not supported yet (use \"memory\"), running without a cache", t)
+		return repo
+	}
+	ttl := time.Duration(cfg.Cache.Config.Ttl) * time.Second
+	c := cached.New(repo, cached.Options{TTL: ttl, MaxEntries: cfg.Cache.Config.MaxEntries})
+	c.StartStatsLogger(cacheStatsInterval, logger.InfoF)
+	logger.InfoF("Read cache enabled (in-memory, ttl=%v, maxEntries=%d)", ttl, cfg.Cache.Config.MaxEntries)
+	return c
 }

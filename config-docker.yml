@@ -7,7 +7,11 @@ system:
   tenantId: "biteexpress"
   timezone: "UTC"
 cache:
-  enabled: false
+  enabled: true
+  type: "memory" # other types (e.g. redis) are not supported yet
+  config:
+    ttl: 60 # seconds an entry stays valid
+    maxEntries: 1000 # list/search results; by-id entries allowed: 10x this
 repository:
   providers:
     - name: "mongodb"

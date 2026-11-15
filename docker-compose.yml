@@ -38,6 +38,8 @@ services:
       mongodb: { condition: service_healthy }
     environment:
       APP_ENV: docker
+      # switch the cache per run, e.g. BITE_CACHE_ENABLED=false docker-compose up -d api
+      BITE_CACHE_ENABLED: ${BITE_CACHE_ENABLED:-true}
     ports: ["8082:8082"]
     restart: unless-stopped
     healthcheck:

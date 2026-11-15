@@ -7,14 +7,11 @@ system:
   tenantId: "biteexpress"
   timezone: "UTC"
 cache:
-  enabled: false
-  type: "redis"
+  enabled: true
+  type: "memory" # other types (e.g. redis) are not supported yet
   config:
-    host: "redis-container"
-    port: 6379
-    password: ""
-    db: 2
-    ttl: 300 # Time to live in seconds (300seconds = 5 minutes)
+    ttl: 60 # seconds an entry stays valid
+    maxEntries: 1000 # list/search results; by-id entries allowed: 10x this
 repository:
   providers:
     - name: "mongodb"
